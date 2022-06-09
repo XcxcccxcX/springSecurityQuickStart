@@ -1,6 +1,7 @@
 package com.chang.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -16,11 +17,13 @@ import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
 
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
@@ -51,16 +54,26 @@ public class SecurityConfig {
         return NoOpPasswordEncoder.getInstance();
     }
 
+    @Autowired
+    DataSource dataSource;
+
     /**
      * 实际开发中 用户都是存储再数据库     需实现 UserDetails
      * @return
      */
     @Bean
     public UserDetailsService userDetailsService(){
-        InMemoryUserDetailsManager memoryUserDetails = new InMemoryUserDetailsManager();
-        memoryUserDetails.createUser(User.withUsername("hsu").password("hsu").roles("admin").build());
-        memoryUserDetails.createUser(User.withUsername("chang").password("chang").roles("user").build());
-        return memoryUserDetails;
+        // 修改InMemoryUserDetailsManager 提供的用户数据用 JdbcUserDetailsManager 代替掉
+        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager();
+        // 注入数据源
+        jdbcUserDetailsManager.setDataSource(dataSource);
+        if (!jdbcUserDetailsManager.userExists("hsu")) {
+            jdbcUserDetailsManager.createUser(User.withUsername("hsu").password("hsu").roles("admin").build());
+        }
+        if (!jdbcUserDetailsManager.userExists("chang")) {
+            jdbcUserDetailsManager.createUser(User.withUsername("chang").password("chang").roles("user").build());
+        }
+        return jdbcUserDetailsManager;
     }
 
     @Bean

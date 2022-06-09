@@ -31,4 +31,14 @@ public class LoginController {
     public String fail(){
         return "fail";
     }
+
+    @RequestMapping("/admin/hello")
+    public String adminHello(){
+        return "admin";
+    }
+
+    @RequestMapping("/user/hello")
+    public String userHello(){
+        return "user";
+    }
 }

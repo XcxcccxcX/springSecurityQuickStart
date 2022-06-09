@@ -3,6 +3,8 @@ package com.chang.security.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -57,12 +59,20 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService(){
         InMemoryUserDetailsManager memoryUserDetails = new InMemoryUserDetailsManager();
         memoryUserDetails.createUser(User.withUsername("hsu").password("hsu").roles("admin").build());
+        memoryUserDetails.createUser(User.withUsername("chang").password("chang").roles("user").build());
         return memoryUserDetails;
     }
 
     @Bean
     WebSecurityCustomizer webSecurityCustomizer(){
         return web -> web.ignoring().antMatchers("/js/**", "/css/**", "/images/**");
+    }
+
+    @Bean
+    RoleHierarchy roleHierarchy(){
+        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
+        roleHierarchy.setHierarchy("ROLE_admin > ROLE_user");
+        return roleHierarchy;
     }
 
 
@@ -78,8 +88,8 @@ public class SecurityConfig {
 
         httpSecurity
                 .authorizeRequests()
-                .antMatchers("/hello")
-                .permitAll()
+                .antMatchers("/admin/*").hasRole("admin")
+                .antMatchers("/user/*").hasRole("user")
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
